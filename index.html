@@ -1,0 +1,667 @@
+<html lang="zh-CN"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>宇宙财富消费消费模拟世界</title>
+  <!-- Tailwind CSS v3 -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome -->
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+  <!-- GSAP 动画库 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <!-- 自定义 Tailwind 配置 -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            space: '#0a192f',
+            gold: '#ffd700',
+            earth: '#1a73e8',
+            spaceBlue: '#0d47a1',
+            buddhaGold: '#ffd700',
+            heavenWhite: '#f5f5f5',
+            accent: '#00b0ff',
+          },
+          fontFamily: {
+            orbitron: ['Orbitron', 'sans-serif'],
+            roboto: ['Roboto', 'sans-serif'],
+            exo: ['Exo 2', 'sans-serif'],
+          },
+          animation: {
+            'spin-slow': 'spin 20s linear infinite',
+            'pulse-slow': 'pulse 5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'float': 'float 3s ease-in-out infinite',
+          },
+          keyframes: {
+            float: {
+              '0%, 100%': { transform: 'translateY(0)' },
+              '50%': { transform: 'translateY(-10px)' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .text-shadow {
+        text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+      }
+      .text-shadow-gold {
+        text-shadow: 0 0 10px rgba(255, 215, 0, 0.7);
+      }
+      .bg-gradient-space {
+        background: linear-gradient(to bottom, #0a192f, #1a2a4a);
+      }
+      .bg-gradient-earth {
+        background: linear-gradient(to bottom, #1a73e8, #4285f4);
+      }
+      .bg-gradient-space-blue {
+        background: linear-gradient(to bottom, #0d47a1, #1565c0);
+      }
+      .bg-gradient-buddha {
+        background: linear-gradient(to bottom, #ffd700, #ffc107);
+      }
+      .bg-gradient-heaven {
+        background: linear-gradient(to bottom, #f5f5f5, #e0e0e0);
+      }
+      .glass-effect {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+      .planet-hover {
+        transition: all 0.3s ease;
+      }
+      .planet-hover:hover {
+        transform: scale(1.05);
+        box-shadow: 0 0 20px rgba(255, 215, 0, 0.7);
+      }
+      .item-card {
+        transition: all 0.3s ease;
+      }
+      .item-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 176, 255, 0.3);
+      }
+      .star {
+        position: absolute;
+        background-color: white;
+        border-radius: 50%;
+        animation: twinkle 4s infinite ease-in-out;
+      }
+      @keyframes twinkle {
+        0%, 100% { opacity: 0.2; }
+        50% { opacity: 1; }
+      }
+      .particle {
+        position: absolute;
+        border-radius: 50%;
+        pointer-events: none;
+      }
+      .scrollbar-hidden::-webkit-scrollbar {
+        display: none;
+      }
+      .scrollbar-hidden {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+    }
+  </style>
+  <!-- 引入 Google 字体 -->
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700&amp;family=Roboto:wght@300;400;500;700&amp;family=Exo+2:wght@300;400;500;700&amp;display=swap" rel="stylesheet">
+</head>
+<body class="font-roboto text-white overflow-x-hidden bg-space">
+  <!-- 背景星星 -->
+  <div id="stars-container" class="fixed inset-0 z-0"></div>
+
+  <!-- 顶部导航栏 -->
+  <header class="fixed top-0 left-0 right-0 z-50 glass-effect">
+    <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+      <div class="flex items-center">
+        <i class="fa fa-globe text-gold text-2xl mr-2 animate-pulse-slow"></i>
+        <h1 class="text-xl md:text-2xl font-orbitron font-bold text-gold text-shadow-gold">宇宙财富消费模拟世界</h1>
+      </div>
+      <div class="flex items-center space-x-4">
+        <div class="hidden md:flex items-center space-x-2 bg-black bg-opacity-30 px-3 py-1 rounded-full">
+          <i class="fa fa-money text-gold"></i>
+          <span id="user-wealth" class="font-exo font-bold text-gold">1,000,000,000,000,000,000</span>
+        </div>
+        <button id="assets-btn" class="flex items-center space-x-1 bg-accent bg-opacity-20 hover:bg-opacity-30 px-3 py-1 rounded-full transition-all">
+          <i class="fa fa-diamond"></i>
+          <span>我的资产</span>
+        </button>
+        <button id="settings-btn" class="bg-accent bg-opacity-20 hover:bg-opacity-30 p-2 rounded-full transition-all">
+          <i class="fa fa-cog"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主内容区 -->
+  <main class="min-h-screen pt-16 pb-20">
+    <!-- 页面容器 - 用于页面切换动画 -->
+    <div id="page-container" class="relative">
+      <!-- 首页/宇宙地图 -->
+      <section id="cosmic-map" class="page active min-h-screen flex flex-col items-center justify-center p-4">
+        <div class="container mx-auto max-w-7xl">
+          <!-- 财富显示 - 移动端 -->
+          <div class="md:hidden flex justify-center mb-6">
+            <div class="flex items-center space-x-2 bg-black bg-opacity-30 px-4 py-2 rounded-full">
+              <i class="fa fa-money text-gold"></i>
+              <span id="user-wealth-mobile" class="font-exo font-bold text-gold">1,000,000,000,000,000,000</span>
+            </div>
+          </div>
+          
+          <!-- 欢迎信息 -->
+          <div class="text-center mb-10">
+            <h2 class="text-3xl md:text-5xl font-orbitron font-bold mb-4 text-shadow">欢迎来到宇宙财富消费模拟世界</h2>
+            <p class="text-lg md:text-xl text-gray-300 max-w-2xl mx-auto">作为宇宙首富，您可以探索各个区域，购买任何您想要的物品，体验无限财富的乐趣！</p>
+          </div>
+          
+          <!-- 可探索区域 -->
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+            <!-- 地球区域 -->
+            <div class="location-card planet-hover rounded-xl overflow-hidden cursor-pointer" data-location="earth">
+              <div class="relative h-64 overflow-hidden rounded-t-xl">
+                <img src="https://p3-doubao-search-sign.byteimg.com/tos-cn-i-be4g95zd3a/933129284883972141~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&amp;x-expires=1776912546&amp;x-signature=DFMZihW4m1QwnKErEt7x69X2KbA%3D" alt="地球" class="w-full h-full object-cover">
+                <div class="absolute inset-0 bg-gradient-to-t from-black to-transparent"></div>
+                <h3 class="absolute bottom-4 left-4 text-2xl font-orbitron font-bold text-shadow">地球</h3>
+              </div>
+              <div class="bg-gradient-earth p-4 rounded-b-xl">
+                <p class="text-sm mb-3">人类的家园，拥有丰富的资源和多样的文化。</p>
+                <div class="flex justify-between items-center">
+                  <span class="text-xs bg-black bg-opacity-30 px-2 py-1 rounded-full">现实与虚拟物品</span>
+                  <button class="text-xs bg-accent hover:bg-opacity-80 px-3 py-1 rounded-full transition-all">探索</button>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 外太空星系区域 -->
+            <div class="location-card planet-hover rounded-xl overflow-hidden cursor-pointer" data-location="space">
+              <div class="relative h-64 overflow-hidden rounded-t-xl">
+                <img src="https://p26-doubao-search-sign.byteimg.com/tos-cn-i-be4g95zd3a/998028010377314382~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&amp;x-expires=1776912547&amp;x-signature=dR8AjWO4V7yDlac2t%2BPOKcVrzaY%3D" alt="外太空星系" class="w-full h-full object-cover">
+                <div class="absolute inset-0 bg-gradient-to-t from-black to-transparent"></div>
+                <h3 class="absolute bottom-4 left-4 text-2xl font-orbitron font-bold text-shadow">外太空星系</h3>
+              </div>
+              <div class="bg-gradient-space-blue p-4 rounded-b-xl">
+                <p class="text-sm mb-3">浩瀚的宇宙，包含无数星系和星球，等待您的探索。</p>
+                <div class="flex justify-between items-center">
+                  <span class="text-xs bg-black bg-opacity-30 px-2 py-1 rounded-full">星际战舰与星球</span>
+                  <button class="text-xs bg-accent hover:bg-opacity-80 px-3 py-1 rounded-full transition-all">探索</button>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 佛国世界区域 -->
+            <div class="location-card planet-hover rounded-xl overflow-hidden cursor-pointer" data-location="buddha">
+              <div class="relative h-64 overflow-hidden rounded-t-xl">
+                <img src="https://p26-doubao-search-sign.byteimg.com/tos-cn-i-6w9my0ksvp/b92c50bd6f1a4d188a94d2e9bbe249a3~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&amp;x-expires=1776912547&amp;x-signature=xHHVu51igcpvQQf8f0yuIQjsvwk%3D" alt="佛国世界" class="w-full h-full object-cover">
+                <div class="absolute inset-0 bg-gradient-to-t from-black to-transparent"></div>
+                <h3 class="absolute bottom-4 left-4 text-2xl font-orbitron font-bold text-shadow">佛国世界</h3>
+              </div>
+              <div class="bg-gradient-buddha p-4 rounded-b-xl text-black">
+                <p class="text-sm mb-3">神秘的东方神话世界，包含33层天和四大部洲。</p>
+                <div class="flex justify-between items-center">
+                  <span class="text-xs bg-black bg-opacity-30 px-2 py-1 rounded-full text-white">神话物品与体验</span>
+                  <button class="text-xs bg-accent hover:bg-opacity-80 px-3 py-1 rounded-full transition-all text-white">探索</button>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 天堂区域 -->
+            <div class="location-card planet-hover rounded-xl overflow-hidden cursor-pointer" data-location="heaven">
+              <div class="relative h-64 overflow-hidden rounded-t-xl">
+                <img src="https://p3-doubao-search-sign.byteimg.com/tos-cn-i-be4g95zd3a/1891122066731433991~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&amp;x-expires=1776912546&amp;x-signature=6UbKZnFTIXO6oGk%2FRBmEcIECGfE%3D" alt="天堂" class="w-full h-full object-cover">
+                <div class="absolute inset-0 bg-gradient-to-t from-black to-transparent"></div>
+                <h3 class="absolute bottom-4 left-4 text-2xl font-orbitron font-bold text-shadow">天堂</h3>
+              </div>
+              <div class="bg-gradient-heaven p-4 rounded-b-xl text-black">
+                <p class="text-sm mb-3">圣洁的西方神界，包含伊甸园等神圣场景。</p>
+                <div class="flex justify-between items-center">
+                  <span class="text-xs bg-black bg-opacity-30 px-2 py-1 rounded-full text-white">神圣物品与服务</span>
+                  <button class="text-xs bg-accent hover:bg-opacity-80 px-3 py-1 rounded-full transition-all text-white">探索</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 推荐消费项目 -->
+          <div class="mb-12">
+            <h2 class="text-2xl md:text-3xl font-orbitron font-bold mb-6 text-center text-shadow">推荐消费项目</h2>
+            <div class="relative">
+              <div id="recommended-items" class="flex space-x-6 overflow-x-auto scrollbar-hidden pb-6 snap-x">
+                <!-- 推荐物品将通过 JavaScript 动态生成 -->
+              </div>
+              <div class="absolute top-1/2 left-0 transform -translate-y-1/2 z-10">
+                <button id="scroll-left" class="bg-black bg-opacity-50 hover:bg-opacity-70 p-2 rounded-full">
+                  <i class="fa fa-chevron-left"></i>
+                </button>
+              </div>
+              <div class="absolute top-1/2 right-0 transform -translate-y-1/2 z-10">
+                <button id="scroll-right" class="bg-black bg-opacity-50 hover:bg-opacity-70 p-2 rounded-full">
+                  <i class="fa fa-chevron-right"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 财富增长图表 -->
+          <div class="bg-black bg-opacity-30 rounded-xl p-4 md:p-6">
+            <h2 class="text-xl md:text-2xl font-orbitron font-bold mb-4 text-center text-shadow">您的财富增长</h2>
+            <div class="h-64">
+              <canvas id="wealth-chart"></canvas>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 地球区域页 -->
+      <section id="earth-page" class="page hidden min-h-screen p-4">
+        <div class="container mx-auto max-w-7xl">
+          <!-- 区域标题 -->
+          <div class="flex justify-between items-center mb-8">
+            <div class="flex items-center">
+              <button class="back-btn mr-4 bg-accent bg-opacity-20 hover:bg-opacity-30 p-2 rounded-full transition-all">
+                <i class="fa fa-arrow-left"></i>
+              </button>
+              <h2 class="text-2xl md:text-3xl font-orbitron font-bold text-earth text-shadow">地球区域</h2>
+            </div>
+            <div class="flex items-center space-x-2 bg-black bg-opacity-30 px-3 py-1 rounded-full">
+              <i class="fa fa-money text-gold"></i>
+              <span class="user-wealth-page font-exo font-bold text-gold">1,000,000,000,000,000,000</span>
+            </div>
+          </div>
+          
+          <!-- 地球背景 -->
+          <div class="relative h-64 md:h-96 rounded-xl overflow-hidden mb-8">
+            <img src="https://p3-doubao-search-sign.byteimg.com/tos-cn-i-be4g95zd3a/933129284883972141~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&amp;x-expires=1776912546&amp;x-signature=DFMZihW4m1QwnKErEt7x69X2KbA%3D" alt="地球" class="w-full h-full object-cover">
+            <div class="absolute inset-0 bg-gradient-to-t from-black to-transparent"></div>
+            <div class="absolute bottom-4 left-4 max-w-lg">
+              <h3 class="text-2xl md:text-4xl font-orbitron font-bold mb-2 text-shadow">地球</h3>
+              <p class="text-sm md:text-base text-gray-300">人类的家园，拥有丰富的资源和多样的文化。在这里您可以购买现实和虚拟物品。</p>
+            </div>
+          </div>
+          
+          <!-- 物品分类导航 -->
+          <div class="flex space-x-4 overflow-x-auto scrollbar-hidden pb-4 mb-8">
+            <button class="category-btn active whitespace-nowrap bg-earth hover:bg-opacity-80 px-4 py-2 rounded-full transition-all" data-category="all">全部</button>
+            <button class="category-btn whitespace-nowrap bg-black bg-opacity-30 hover:bg-opacity-50 px-4 py-2 rounded-full transition-all" data-category="real_estate">房产</button>
+            <button class="category-btn whitespace-nowrap bg-black bg-opacity-30 hover:bg-opacity-50 px-4 py-2 rounded-full transition-all" data-category="luxury">奢侈品</button>
+            <button class="category-btn whitespace-nowrap bg-black bg-opacity-30 hover:bg-opacity-50 px-4 py-2 rounded-full transition-all" data-category="company">公司</button>
+            <button class="category-btn whitespace-nowrap bg-black bg-opacity-30 hover:bg-opacity-50 px-4 py-2 rounded-full transition-all" data-category="tech">科技产品</button>
+            <button class="category-btn whitespace-nowrap bg-black bg-opacity-30 hover:bg-opacity-50 px-4 py-2 rounded-full transition-all" data-category="virtual">虚拟资产</button>
+          </div>
+          
+          <!-- 物品搜索 -->
+          <div class="relative mb-8">
+            <input type="text" id="earth-search" placeholder="搜索地球物品..." class="w-full bg-black bg-opacity-30 border border-gray-700 rounded-full py-3 px-5 pl-12 focus:outline-none focus:border-accent">
+            <i class="fa fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+          </div>
+          
+          <!-- 物品列表 -->
+          <div id="earth-items" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <!-- 地球物品将通过 JavaScript 动态生成 -->
+          </div>
+        </div>
+      </section>
+
+      <!-- 外太空星系页 -->
+      <section id="space-page" class="page hidden min-h-screen p-4">
+        <div class="container mx-auto max-w-7xl">
+          <!-- 区域标题 -->
+          <div class="flex justify-between items-center mb-8">
+            <div class="flex items-center">
+              <button class="back-btn mr-4 bg-accent bg-opacity-20 hover:bg-opacity-30 p-2 rounded-full transition-all">
+                <i class="fa fa-arrow-left"></i>
+              </button>
+              <h2 class="text-2xl md:text-3xl font-orbitron font-bold text-spaceBlue text-shadow">外太空星系</h2>
+            </div>
+            <div class="flex items-center space-x-2 bg-black bg-opacity-30 px-3 py-1 rounded-full">
+              <i class="fa fa-money text-gold"></i>
+              <span class="user-wealth-page font-exo font-bold text-gold">1,000,000,000,000,000,000</span>
+            </div>
+          </div>
+          
+          <!-- 外太空背景 -->
+          <div class="relative h-64 md:h-96 rounded-xl overflow-hidden mb-8">
+            <img src="https://p26-doubao-search-sign.byteimg.com/tos-cn-i-be4g95zd3a/998028010377314382~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&amp;x-expires=1776912547&amp;x-signature=dR8AjWO4V7yDlac2t%2BPOKcVrzaY%3D" alt="外太空星系" class="w-full h-full object-cover">
+            <div class="absolute inset-0 bg-gradient-to-t from-black to-transparent"></div>
+            <div class="absolute bottom-4 left-4 max-w-lg">
+              <h3 class="text-2xl md:text-4xl font-orbitron font-bold mb-2 text-shadow">外太空星系</h3>
+              <p class="text-sm md:text-base text-gray-300">浩瀚的宇宙，包含无数星系和星球，等待您的探索。</p>
+            </div>
+          </div>
+          
+          <!-- 星系分类导航 -->
+          <div class="flex space-x-4 overflow-x-auto scrollbar-hidden pb-4 mb-8">
+            <button class="galaxy-btn active whitespace-nowrap bg-spaceBlue hover:bg-opacity-80 px-4 py-2 rounded-full transition-all" data-galaxy="all">全部星系</button>
+            <button class="galaxy-btn whitespace-nowrap bg-black bg-opacity-30 hover:bg-opacity-50 px-4 py-2 rounded-full transition-all" data-galaxy="milky_way">银河系</button>
+            <button class="galaxy-btn whitespace-nowrap bg-black bg-opacity-30 hover:bg-opacity-50 px-4 py-2 rounded-full transition-all" data-galaxy="andromeda">仙女座星系</button>
+            <button class="galaxy-btn whitespace-nowrap bg-black bg-opacity-30 hover:bg-opacity-50 px-4 py-2 rounded-full transition-all" data-galaxy="triangulum">三角座星系</button>
+            <button class="galaxy-btn whitespace-nowrap bg-black bg-opacity-30 hover:bg-opacity-50 px-4 py-2 rounded-full transition-all" data-galaxy="sombrero">草帽星系</button>
+          </div>
+          
+          <!-- 物品搜索 -->
+          <div class="relative mb-8">
+            <input type="text" id="space-search" placeholder="搜索太空物品..." class="w-full bg-black bg-opacity-30 border border-gray-700 rounded-full py-3 px-5 pl-12 focus:outline-none focus:border-accent">
+            <i class="fa fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+          </div>
+          
+          <!-- 物品列表 -->
+          <div id="space-items" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <!-- 太空物品将通过 JavaScript 动态生成 -->
+          </div>
+        </div>
+      </section>
+
+      <!-- 佛国世界页 -->
+      <section id="buddha-page" class="page hidden min-h-screen p-4">
+        <div class="container mx-auto max-w-7xl">
+          <!-- 区域标题 -->
+          <div class="flex justify-between items-center mb-8">
+            <div class="flex items-center">
+              <button class="back-btn mr-4 bg-accent bg-opacity-20 hover:bg-opacity-30 p-2 rounded-full transition-all">
+                <i class="fa fa-arrow-left"></i>
+              </button>
+              <h2 class="text-2xl md:text-3xl font-orbitron font-bold text-buddhaGold text-shadow-gold">佛国世界</h2>
+            </div>
+            <div class="flex items-center space-x-2 bg-black bg-opacity-30 px-3 py-1 rounded-full">
+              <i class="fa fa-money text-gold"></i>
+              <span class="user-wealth-page font-exo font-bold text-gold">1,000,000,000,000,000,000</span>
+            </div>
+          </div>
+          
+          <!-- 佛国世界背景 -->
+          <div class="relative h-64 md:h-96 rounded-xl overflow-hidden mb-8">
+            <img src="https://p26-doubao-search-sign.byteimg.com/tos-cn-i-6w9my0ksvp/b92c50bd6f1a4d188a94d2e9bbe249a3~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&amp;x-expires=1776912547&amp;x-signature=xHHVu51igcpvQQf8f0yuIQjsvwk%3D" alt="佛国世界" class="w-full h-full object-cover">
+            <div class="absolute inset-0 bg-gradient-to-t from-black to-transparent"></div>
+            <div class="absolute bottom-4 left-4 max-w-lg">
+              <h3 class="text-2xl md:text-4xl font-orbitron font-bold mb-2 text-shadow">佛国世界</h3>
+              <p class="text-sm md:text-base text-gray-300">神秘的东方神话世界，包含33层天和四大部洲。</p>
+            </div>
+          </div>
+          
+          <!-- 佛国分类导航 -->
+          <div class="flex space-x-4 overflow-x-auto scrollbar-hidden pb-4 mb-8">
+            <button class="buddha-btn active whitespace-nowrap bg-buddhaGold hover:bg-opacity-80 px-4 py-2 rounded-full transition-all text-black" data-buddha="all">全部区域</button>
+            <button class="buddha-btn whitespace-nowrap bg-black bg-opacity-30 hover:bg-opacity-50 px-4 py-2 rounded-full transition-all" data-buddha="thirty_three_heavens">33层天</button>
+            <button class="buddha-btn whitespace-nowrap bg-black bg-opacity-30 hover:bg-opacity-50 px-4 py-2 rounded-full transition-all" data-buddha="four_contients">四大部洲</button>
+            <button class="buddha-btn whitespace-nowrap bg-black bg-opacity-30 hover:bg-opacity-50 px-4 py-2 rounded-full transition-all" data-buddha="buddhist_relics">佛教圣物</button>
+          </div>
+          
+          <!-- 物品搜索 -->
+          <div class="relative mb-8">
+            <input type="text" id="buddha-search" placeholder="搜索佛国物品..." class="w-full bg-black bg-opacity-30 border border-gray-700 rounded-full py-3 px-5 pl-12 focus:outline-none focus:border-accent">
+            <i class="fa fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+          </div>
+          
+          <!-- 物品列表 -->
+          <div id="buddha-items" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <!-- 佛国物品将通过 JavaScript 动态生成 -->
+          </div>
+        </div>
+      </section>
+
+      <!-- 天堂区域页 -->
+      <section id="heaven-page" class="page hidden min-h-screen p-4">
+        <div class="container mx-auto max-w-7xl">
+          <!-- 区域标题 -->
+          <div class="flex justify-between items-center mb-8">
+            <div class="flex items-center">
+              <button class="back-btn mr-4 bg-accent bg-opacity-20 hover:bg-opacity-30 p-2 rounded-full transition-all">
+                <i class="fa fa-arrow-left"></i>
+              </button>
+              <h2 class="text-2xl md:text-3xl font-orbitron font-bold text-heavenWhite text-shadow">天堂</h2>
+            </div>
+            <div class="flex items-center space-x-2 bg-black bg-opacity-30 px-3 py-1 rounded-full">
+              <i class="fa fa-money text-gold"></i>
+              <span class="user-wealth-page font-exo font-bold text-gold">1,000,000,000,000,000,000</span>
+            </div>
+          </div>
+          
+          <!-- 天堂背景 -->
+          <div class="relative h-64 md:h-96 rounded-xl overflow-hidden mb-8">
+            <img src="https://p3-doubao-search-sign.byteimg.com/tos-cn-i-be4g95zd3a/1891122066731433991~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&amp;x-expires=1776912546&amp;x-signature=6UbKZnFTIXO6oGk%2FRBmEcIECGfE%3D" alt="天堂" class="w-full h-full object-cover">
+            <div class="absolute inset-0 bg-gradient-to-t from-black to-transparent"></div>
+            <div class="absolute bottom-4 left-4 max-w-lg">
+              <h3 class="text-2xl md:text-4xl font-orbitron font-bold mb-2 text-shadow">天堂</h3>
+              <p class="text-sm md:text-base text-gray-300">圣洁的西方神界，包含伊甸园等神圣场景。</p>
+            </div>
+          </div>
+          
+          <!-- 天堂分类导航 -->
+          <div class="flex space-x-4 overflow-x-auto scrollbar-hidden pb-4 mb-8">
+            <button class="heaven-btn active whitespace-nowrap bg-heavenWhite hover:bg-opacity-80 px-4 py-2 rounded-full transition-all text-black" data-heaven="all">全部区域</button>
+            <button class="heaven-btn whitespace-nowrap bg-black bg-opacity-30 hover:bg-opacity-50 px-4 py-2 rounded-full transition-all" data-heaven="eden">伊甸园</button>
+            <button class="heaven-btn whitespace-nowrap bg-black bg-opacity-30 hover:bg-opacity-50 px-4 py-2 rounded-full transition-all" data-heaven="holy_city">圣城</button>
+            <button class="heaven-btn whitespace-nowrap bg-black bg-opacity-30 hover:bg-opacity-50 px-4 py-2 rounded-full transition-all" data-heaven="divine_services">神圣服务</button>
+          </div>
+          
+          <!-- 物品搜索 -->
+          <div class="relative mb-8">
+            <input type="text" id="heaven-search" placeholder="搜索天堂物品..." class="w-full bg-black bg-opacity-30 border border-gray-700 rounded-full py-3 px-5 pl-12 focus:outline-none focus:border-accent">
+            <i class="fa fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+          </div>
+          
+          <!-- 物品列表 -->
+          <div id="heaven-items" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <!-- 天堂物品将通过 JavaScript 动态生成 -->
+          </div>
+        </div>
+      </section>
+
+      <!-- 个人资产页 -->
+      <section id="assets-page" class="page hidden min-h-screen p-4">
+        <div class="container mx-auto max-w-7xl">
+          <!-- 页面标题 -->
+          <div class="flex justify-between items-center mb-8">
+            <div class="flex items-center">
+              <button id="close-assets" class="mr-4 bg-accent bg-opacity-20 hover:bg-opacity-30 p-2 rounded-full transition-all">
+                <i class="fa fa-times"></i>
+              </button>
+              <h2 class="text-2xl md:text-3xl font-orbitron font-bold text-gold text-shadow-gold">我的资产</h2>
+            </div>
+            <div class="flex items-center space-x-2 bg-black bg-opacity-30 px-3 py-1 rounded-full">
+              <i class="fa fa-money text-gold"></i>
+              <span class="user-wealth-page font-exo font-bold text-gold">1,000,000,000,000,000,000</span>
+            </div>
+          </div>
+          
+          <!-- 资产分类导航 -->
+          <div class="flex space-x-4 overflow-x-auto scrollbar-hidden pb-4 mb-8">
+            <button class="asset-type-btn active whitespace-nowrap bg-gold hover:bg-opacity-80 px-4 py-2 rounded-full transition-all text-black" data-type="all">全部资产</button>
+            <button class="asset-type-btn whitespace-nowrap bg-black bg-opacity-30 hover:bg-opacity-50 px-4 py-2 rounded-full transition-all" data-type="earth">地球资产</button>
+            <button class="asset-type-btn whitespace-nowrap bg-black bg-opacity-30 hover:bg-opacity-50 px-4 py-2 rounded-full transition-all" data-type="space">太空资产</button>
+            <button class="asset-type-btn whitespace-nowrap bg-black bg-opacity-30 hover:bg-opacity-50 px-4 py-2 rounded-full transition-all" data-type="buddha">佛国资产</button>
+            <button class="asset-type-btn whitespace-nowrap bg-black bg-opacity-30 hover:bg-opacity-50 px-4 py-2 rounded-full transition-all" data-type="heaven">天堂资产</button>
+            <button class="asset-type-btn whitespace-nowrap bg-black bg-opacity-30 hover:bg-opacity-50 px-4 py-2 rounded-full transition-all" data-type="favorites">我的收藏</button>
+          </div>
+          
+          <!-- 购买历史 -->
+          <div class="mb-8">
+            <h3 class="text-xl font-orbitron font-bold mb-4">最近购买</h3>
+            <div id="purchase-history" class="bg-black bg-opacity-30 rounded-xl p-4 max-h-48 overflow-y-auto scrollbar-hidden">
+              <!-- 购买历史将通过 JavaScript 动态生成 -->
+              <p class="text-gray-400 text-center">您尚未购买任何物品</p>
+            </div>
+          </div>
+          
+          <!-- 资产列表 -->
+          <div id="user-assets" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <!-- 用户资产将通过 JavaScript 动态生成 -->
+            <div class="col-span-full text-center py-12">
+              <i class="fa fa-diamond text-5xl text-gray-600 mb-4"></i>
+              <p class="text-gray-400">您尚未拥有任何资产</p>
+              <p class="text-gray-500 text-sm mt-2">前往各个区域开始您的宇宙购物之旅吧！</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 迁移功能页 -->
+      <section id="migration-page" class="page hidden min-h-screen flex items-center justify-center p-4 bg-black">
+        <div class="container mx-auto max-w-4xl text-center">
+          <h2 class="text-3xl font-orbitron font-bold mb-6 text-gold text-shadow-gold">区域迁移</h2>
+          
+          <!-- 迁移动画容器 -->
+          <div id="migration-animation" class="relative h-96 mb-8 rounded-xl overflow-hidden">
+            <div id="migration-bg" class="absolute inset-0 bg-cover bg-center" style="background-image: url('https://p26-doubao-search-sign.byteimg.com/tos-cn-i-be4g95zd3a/998028010377314382~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&amp;x-expires=1776912547&amp;x-signature=dR8AjWO4V7yDlac2t%2BPOKcVrzaY%3D')"></div>
+            <div id="spaceship" class="absolute bottom-10 left-10 w-32 h-32 bg-contain bg-no-repeat" style="background-image: url('https://p3-doubao-search-sign.byteimg.com/labis/2d2127ff3c7e6dda3698a2f3199ccb35~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&amp;x-expires=1776912560&amp;x-signature=Bk3cje3NGvhHVpEigZN3%2F7p02%2BY%3D')"></div>
+            <div id="destination-planet" class="absolute top-10 right-10 w-40 h-40 bg-contain bg-no-repeat opacity-0" style="background-image: url('https://p3-doubao-search-sign.byteimg.com/tos-cn-i-be4g95zd3a/933129284883972141~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&amp;x-expires=1776912546&amp;x-signature=DFMZihW4m1QwnKErEt7x69X2KbA%3D')"></div>
+          </div>
+          
+          <!-- 目的地选择 -->
+          <div class="mb-8">
+            <h3 class="text-xl font-orbitron font-bold mb-4">选择目的地</h3>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div class="destination-option cursor-pointer p-3 rounded-xl bg-black bg-opacity-50 hover:bg-opacity-70 transition-all" data-destination="earth">
+                <div class="w-16 h-16 mx-auto mb-2 rounded-full overflow-hidden">
+                  <img src="https://p3-doubao-search-sign.byteimg.com/tos-cn-i-be4g95zd3a/933129284883972141~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&amp;x-expires=1776912546&amp;x-signature=DFMZihW4m1QwnKErEt7x69X2KbA%3D" alt="地球" class="w-full h-full object-cover">
+                </div>
+                <p class="text-sm">地球</p>
+              </div>
+              <div class="destination-option cursor-pointer p-3 rounded-xl bg-black bg-opacity-50 hover:bg-opacity-70 transition-all" data-destination="space">
+                <div class="w-16 h-16 mx-auto mb-2 rounded-full overflow-hidden">
+                  <img src="https://p26-doubao-search-sign.byteimg.com/tos-cn-i-be4g95zd3a/998028010377314382~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&amp;x-expires=1776912547&amp;x-signature=dR8AjWO4V7yDlac2t%2BPOKcVrzaY%3D" alt="外太空星系" class="w-full h-full object-cover">
+                </div>
+                <p class="text-sm">外太空星系</p>
+              </div>
+              <div class="destination-option cursor-pointer p-3 rounded-xl bg-black bg-opacity-50 hover:bg-opacity-70 transition-all" data-destination="buddha">
+                <div class="w-16 h-16 mx-auto mb-2 rounded-full overflow-hidden">
+                  <img src="https://p26-doubao-search-sign.byteimg.com/tos-cn-i-6w9my0ksvp/b92c50bd6f1a4d188a94d2e9bbe249a3~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&amp;x-expires=1776912547&amp;x-signature=xHHVu51igcpvQQf8f0yuIQjsvwk%3D" alt="佛国世界" class="w-full h-full object-cover">
+                </div>
+                <p class="text-sm">佛国世界</p>
+              </div>
+              <div class="destination-option cursor-pointer p-3 rounded-xl bg-black bg-opacity-50 hover:bg-opacity-70 transition-all" data-destination="heaven">
+                <div class="w-16 h-16 mx-auto mb-2 rounded-full overflow-hidden">
+                  <img src="https://p3-doubao-search-sign.byteimg.com/tos-cn-i-be4g95zd3a/1891122066731433991~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&amp;x-expires=1776912546&amp;x-signature=6UbKZnFTIXO6oGk%2FRBmEcIECGfE%3D" alt="天堂" class="w-full h-full object-cover">
+                </div>
+                <p class="text-sm">天堂</p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 操作按钮 -->
+          <div class="flex justify-center space-x-4">
+            <button id="cancel-migration" class="bg-gray-700 hover:bg-gray-600 px-6 py-3 rounded-full transition-all">取消</button>
+            <button id="confirm-migration" class="bg-accent hover:bg-opacity-80 px-6 py-3 rounded-full transition-all" disabled="">确认迁移</button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- 底部导航栏 -->
+  <footer class="fixed bottom-0 left-0 right-0 z-50 glass-effect">
+    <div class="container mx-auto px-4 py-3">
+      <div class="flex justify-around">
+        <button id="home-btn" class="flex flex-col items-center text-gold">
+          <i class="fa fa-globe text-xl"></i>
+          <span class="text-xs mt-1">宇宙地图</span>
+        </button>
+        <button id="migration-btn" class="flex flex-col items-center text-gray-400 hover:text-gold transition-colors">
+          <i class="fa fa-rocket text-xl"></i>
+          <span class="text-xs mt-1">区域迁移</span>
+        </button>
+        <button id="assets-footer-btn" class="flex flex-col items-center text-gray-400 hover:text-gold transition-colors">
+          <i class="fa fa-diamond text-xl"></i>
+          <span class="text-xs mt-1">我的资产</span>
+        </button>
+      </div>
+    </div>
+  </footer>
+
+  <!-- 物品详情弹窗 -->
+  <div id="item-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
+    <div class="absolute inset-0 bg-black bg-opacity-80" id="modal-overlay"></div>
+    <div class="relative bg-space rounded-xl overflow-hidden max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div class="relative h-64">
+        <img id="modal-item-image" src="" alt="物品图片" class="w-full h-full object-cover">
+        <button id="close-modal" class="absolute top-4 right-4 bg-black bg-opacity-50 hover:bg-opacity-70 p-2 rounded-full transition-all">
+          <i class="fa fa-times"></i>
+        </button>
+        <button id="favorite-toggle" class="absolute top-4 left-4 bg-black bg-opacity-50 hover:bg-opacity-70 p-2 rounded-full transition-all">
+          <i class="fa fa-heart-o text-red-500"></i>
+        </button>
+      </div>
+      <div class="p-6">
+        <div class="flex justify-between items-start mb-4">
+          <h3 id="modal-item-name" class="text-2xl font-orbitron font-bold"></h3>
+          <span id="modal-item-price" class="font-exo font-bold text-gold"></span>
+        </div>
+        <p id="modal-item-description" class="text-gray-300 mb-6"></p>
+        <div class="flex justify-between items-center">
+          <div class="flex items-center space-x-4">
+            <span id="modal-item-category" class="text-xs bg-black bg-opacity-30 px-2 py-1 rounded-full"></span>
+            <span id="modal-item-location" class="text-xs bg-black bg-opacity-30 px-2 py-1 rounded-full"></span>
+          </div>
+          <button id="buy-item-btn" class="bg-accent hover:bg-opacity-80 px-6 py-2 rounded-full transition-all">购买</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 购买确认弹窗 -->
+  <div id="purchase-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
+    <div class="absolute inset-0 bg-black bg-opacity-80" id="purchase-modal-overlay"></div>
+    <div class="relative bg-space rounded-xl overflow-hidden max-w-md w-full">
+      <div class="p-6">
+        <h3 class="text-xl font-orbitron font-bold mb-4 text-center">确认购买</h3>
+        <div class="flex items-center space-x-4 mb-6">
+          <div class="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0">
+            <img id="purchase-item-image" src="" alt="物品图片" class="w-full h-full object-cover">
+          </div>
+          <div>
+            <h4 id="purchase-item-name" class="font-bold"></h4>
+            <p id="purchase-item-price" class="font-exo font-bold text-gold"></p>
+          </div>
+        </div>
+        <div class="flex justify-between items-center mb-6">
+          <span>数量:</span>
+          <div class="flex items-center space-x-2">
+            <button id="decrease-quantity" class="bg-black bg-opacity-30 hover:bg-opacity-50 w-8 h-8 rounded-full flex items-center justify-center transition-all">
+              <i class="fa fa-minus"></i>
+            </button>
+            <span id="item-quantity" class="w-8 text-center">1</span>
+            <button id="increase-quantity" class="bg-black bg-opacity-30 hover:bg-opacity-50 w-8 h-8 rounded-full flex items-center justify-center transition-all">
+              <i class="fa fa-plus"></i>
+            </button>
+          </div>
+        </div>
+        <div class="flex justify-between items-center mb-6">
+          <span>总计:</span>
+          <span id="total-price" class="font-exo font-bold text-gold"></span>
+        </div>
+        <div class="flex justify-center space-x-4">
+          <button id="cancel-purchase" class="bg-gray-700 hover:bg-gray-600 px-6 py-2 rounded-full transition-all">取消</button>
+          <button id="confirm-purchase" class="bg-accent hover:bg-opacity-80 px-6 py-2 rounded-full transition-all">确认购买</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 购买成功弹窗 -->
+  <div id="success-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
+    <div class="absolute inset-0 bg-black bg-opacity-80" id="success-modal-overlay"></div>
+    <div class="relative bg-space rounded-xl overflow-hidden max-w-md w-full p-6 text-center">
+      <div class="w-20 h-20 mx-auto mb-4 rounded-full bg-green-500 bg-opacity-20 flex items-center justify-center">
+        <i class="fa fa-check text-4xl text-green-500"></i>
+      </div>
+      <h3 class="text-xl font-orbitron font-bold mb-2">购买成功！</h3>
+      <p id="success-message" class="text-gray-300 mb-6"></p>
+      <div class="flex justify-center space-x-4">
+        <button id="view-assets" class="bg-gray-700 hover:bg-gray-600 px-6 py-2 rounded-full transition-all">查看资产</button>
+        <button id="continue-shopping" class="bg-accent hover:bg-opacity-80 px-6 py-2 rounded-full transition-all">继续购物</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript -->
+  <script src="script.js"></script>
+
+
+</body></html>
